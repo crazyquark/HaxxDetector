@@ -13,66 +13,87 @@
  *  to run on any ESP8266 device with an OLED screen. 
  */
 
-#include <ESP8266WiFi.h>       
+#include <ESP8266WiFi.h>
 #include <Wire.h>
+#include <SSD1306Wire.h>
 #include <SSD1306Brzo.h>
 #include <OLEDDisplayUi.h>
 
 #include "nuggs.h" // Nugget Face bitmap files
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_WIDTH 128    // OLED display width, in pixels
+#define SCREEN_HEIGHT 64    // OLED display height, in pixels
+#define OLED_RESET 4        // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
-// Adafruit_NeoPixel pixels {1, D8, NEO_GRB + NEO_KHZ800 }; // initialize 1 NeoPixel on D8
+SSD1306Wire display(0x3c, D2, D1); // initialize OLED on I2C pins
+OLEDDisplayUi ui(&display);
 
-// SH1106Wire display(0x3c, D2, D1); // initialize OLED on I2C pins
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-OLEDDisplayUi ui     ( &display );
-
-extern "C" {
+extern "C"
+{
 #include "user_interface.h"
 }
 
 const short channels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}; // Max: US 11, EU 13, JAP 14
 
-int ch_index { 0 };               
-int packet_rate { 0 };            
-int attack_counter { 0 };         
-unsigned long update_time { 0 };  
-unsigned long ch_time { 0 };
+int ch_index{0};
+int packet_rate{0};
+int attack_counter{0};
+unsigned long update_time{0};
+unsigned long ch_time{0};
 
-void sniffer(uint8_t *buf, uint16_t len) {
-  if (!buf || len < 28) return;
+void sniffer(uint8_t *buf, uint16_t len)
+{
+  if (!buf || len < 28)
+    return;
   byte pkt_type = buf[12];
-  
-  if (pkt_type == 0xA0 || pkt_type == 0xC0) { // flag deauth & dissassociation frames
+
+  if (pkt_type == 0xA0 || pkt_type == 0xC0)
+  { // flag deauth & dissassociation frames
     ++packet_rate;
   }
 }
 
-void attack_started() {
-  pixels.setPixelColor(0, pixels.Color(150, 0, 0)); pixels.show(); // red
+
+void displayDeadNugg()
+{
+  display.clear();
+  display.drawXbm(0, 0, alive_nugg_width, alive_nugg_height, dead_nugg);
+  display.display();
+}
+
+void displayAliveNugg()
+{
+  display.clear();
+  display.drawXbm(0, 0, alive_nugg_width, alive_nugg_height, alive_nugg);
+  display.display();
+}
+
+void attack_started()
+{
+  // pixels.setPixelColor(0, pixels.Color(150, 0, 0));
+  // pixels.show(); // red
   displayDeadNugg();
 }
 
-void attack_stopped() {
-  pixels.setPixelColor(0, pixels.Color(0, 150, 0)); pixels.show(); // green
+void attack_stopped()
+{
+  // pixels.setPixelColor(0, pixels.Color(0, 150, 0));
+  // pixels.show(); // green
   displayAliveNugg();
 }
 
-void setup() {
-  Serial.begin(115200);           // initialize serial communication
-  pixels.begin(); pixels.clear(); // initialize NeoPixel
-  ui.setTargetFPS(60); ui.init(); // initialize OLED screen
+void setup()
+{
+  ui.setTargetFPS(60);
+  ui.init(); // initialize OLED screen
 
   // initalize WiFi card for scanning
   WiFi.disconnect();
-  wifi_set_opmode(STATION_MODE);       
+  wifi_set_opmode(STATION_MODE);
   wifi_set_promiscuous_rx_cb(sniffer);
-  wifi_set_channel(1);        
-  wifi_promiscuous_enable(true);       
+  wifi_set_channel(1);
+  wifi_promiscuous_enable(true);
 
   Serial.println();
   Serial.println("   __ __                ___      __          __          ");
@@ -84,41 +105,43 @@ void setup() {
 
   display.clear();
   display.flipScreenVertically();
-  pixels.setPixelColor(0, pixels.Color(0, 150, 0)); pixels.show();
+  // pixels.setPixelColor(0, pixels.Color(0, 150, 0));
+  // pixels.show();
   displayAliveNugg();
-
 }
 
-void loop() {
+void loop()
+{
   unsigned long current_time = millis();
 
-  if (current_time - update_time >= (sizeof(channels)*100)) {
+  if (current_time - update_time >= (sizeof(channels) * 100))
+  {
     update_time = current_time;
-    
-    if (packet_rate >= 1) { ++attack_counter; } 
-    else { if (attack_counter >= 1) attack_stopped(); attack_counter = 0;}
 
-    if (attack_counter == 1) { attack_started(); }
+    if (packet_rate >= 1)
+    {
+      ++attack_counter;
+    }
+    else
+    {
+      if (attack_counter >= 1)
+        attack_stopped();
+      attack_counter = 0;
+    }
+
+    if (attack_counter == 1)
+    {
+      attack_started();
+    }
     packet_rate = 0;
   }
 
   // Channel hopping
-  if (sizeof(channels) > 1 && current_time - ch_time >= 100) {
+  if (sizeof(channels) > 1 && current_time - ch_time >= 100)
+  {
     ch_time = current_time; // Update time variable
     ch_index = (ch_index + 1) % (sizeof(channels) / sizeof(channels[0]));
     short ch = channels[ch_index];
     wifi_set_channel(ch);
   }
-}
-
-void displayDeadNugg() {
-  display.clear();
-  display.drawXbm(0, 0, alive_nugg_width, alive_nugg_height, dead_nugg);
-  display.display();
-}
-
-void displayAliveNugg() {
-  display.clear();
-  display.drawXbm(0, 0, alive_nugg_width, alive_nugg_height, alive_nugg);
-  display.display();
 }
