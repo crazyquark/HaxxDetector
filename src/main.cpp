@@ -5,23 +5,30 @@
  *  /_/ /_/\__,_/_/|_/_/|_/_____/\___/\__/\___/\___/\__/\____/_/     
  * 
  *  A simple deauth + dissassociation attack detector written for the WiFi Nugget
- *  github.com/HakCat/HaxxDetector
+ *  github.com/crazyquark/HaxxDetector
  * 
  *  By Alex Lynd | alexlynd.com
- *  
+ * 
+ *  Hacked modestly by @crazyquark
+ *  to run on any ESP8266 device with an OLED screen. 
  */
 
 #include <ESP8266WiFi.h>       
-#include <Adafruit_NeoPixel.h>
 #include <Wire.h>
-#include "SH1106Wire.h"
-#include "OLEDDisplayUi.h"
+#include <SSD1306Brzo.h>
+#include <OLEDDisplayUi.h>
 
 #include "nuggs.h" // Nugget Face bitmap files
 
-Adafruit_NeoPixel pixels {1, D8, NEO_GRB + NEO_KHZ800 }; // initialize 1 NeoPixel on D8
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
-SH1106Wire display(0x3c, D2, D1); // initialize OLED on I2C pins
+// Adafruit_NeoPixel pixels {1, D8, NEO_GRB + NEO_KHZ800 }; // initialize 1 NeoPixel on D8
+
+// SH1106Wire display(0x3c, D2, D1); // initialize OLED on I2C pins
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 OLEDDisplayUi ui     ( &display );
 
 extern "C" {
