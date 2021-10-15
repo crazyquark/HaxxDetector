@@ -21,12 +21,7 @@
 
 #include "nuggs.h" // Nugget Face bitmap files
 
-#define SCREEN_WIDTH 128    // OLED display width, in pixels
-#define SCREEN_HEIGHT 64    // OLED display height, in pixels
-#define OLED_RESET 4        // Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-
-SSD1306Wire display(0x3c, D2, D1); // initialize OLED on I2C pins
+SSD1306Wire display(0x3c, D1, D2); // initialize OLED on I2C pins
 OLEDDisplayUi ui(&display);
 
 extern "C"
@@ -94,6 +89,8 @@ void setup()
   wifi_set_promiscuous_rx_cb(sniffer);
   wifi_set_channel(1);
   wifi_promiscuous_enable(true);
+
+  Serial.begin(9600);
 
   Serial.println();
   Serial.println("   __ __                ___      __          __          ");
