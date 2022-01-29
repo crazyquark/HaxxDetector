@@ -13,9 +13,13 @@
  *  to run on any ESP8266 device with an OLED screen. 
  */
 
-#include <ESP8266WiFi.h>
-#include <SSD1306Spi.h>>
+#include <Arduino.h>
+#include <WiFi.h>
+#include <SSD1306Spi.h>
 #include <OLEDDisplayUi.h>
+
+#include "esp_wifi.h"
+#include "esp_wifi_types.h"
 
 #include "nuggs.h" // Nugget Face bitmap files
 // Initialize the OLED display using SPI
@@ -24,13 +28,8 @@
 // D0 -> RES
 // D2 -> DC
 // D8 -> CS
-SSD1306Spi        display(D0, D2, D8);
+SSD1306Spi        display(0, 2, 8);
 OLEDDisplayUi ui(&display);
-
-extern "C"
-{
-#include "user_interface.h"
-}
 
 const short channels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}; // Max: US 11, EU 13, JAP 14
 
@@ -40,13 +39,16 @@ int attack_counter{0};
 unsigned long update_time{0};
 unsigned long ch_time{0};
 
-void sniffer(uint8_t *buf, uint16_t len)
+void sniffer(void* buf, wifi_promiscuous_pkt_type_t type)
 {
-  if (!buf || len < 28)
-    return;
-  byte pkt_type = buf[12];
+  wifi_promiscuous_pkt_t* pkt = (wifi_promiscuous_pkt_t*)buf;
+  wifi_pkt_rx_ctrl_t ctrl = (wifi_pkt_rx_ctrl_t)pkt->rx_ctrl;
+  uint32_t len = ctrl.sig_len;
 
-  if (pkt_type == 0xA0 || pkt_type == 0xC0)
+  if (!pkt || len < 28)
+    return;
+
+  if (type == 0xA0 || type == 0xC0)
   { // flag deauth & dissassociation frames
     ++packet_rate;
   }
@@ -87,11 +89,14 @@ void setup()
   ui.init(); // initialize OLED screen
 
   // initalize WiFi card for scanning
-  WiFi.disconnect();
-  wifi_set_opmode(STATION_MODE);
-  wifi_set_promiscuous_rx_cb(sniffer);
-  wifi_set_channel(1);
-  wifi_promiscuous_enable(true);
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  esp_wifi_init(&cfg);
+  esp_wifi_set_storage(WIFI_STORAGE_RAM);
+  esp_wifi_set_mode(WIFI_MODE_NULL);
+  esp_wifi_start();
+  esp_wifi_set_promiscuous(true);
+  esp_wifi_set_promiscuous_rx_cb(&sniffer);
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
 
   Serial.begin(9600);
 
@@ -142,6 +147,6 @@ void loop()
     ch_time = current_time; // Update time variable
     ch_index = (ch_index + 1) % (sizeof(channels) / sizeof(channels[0]));
     short ch = channels[ch_index];
-    wifi_set_channel(ch);
+    esp_wifi_set_channel(ch, WIFI_SECOND_CHAN_NONE);
   }
 }
