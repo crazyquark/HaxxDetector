@@ -1,16 +1,16 @@
-/*      __  __                ____       __            __            
+/*      __  __                ____       __            __
  *     / / / /___ __  ___  __/ __ \___  / /____  _____/ /_____  _____
  *    / /_/ / __ `/ |/_/ |/_/ / / / _ \/ __/ _ \/ ___/ __/ __ \/ ___/
- *   / __  / /_/ />  <_>  </ /_/ /  __/ /_/  __/ /__/ /_/ /_/ / /    
- *  /_/ /_/\__,_/_/|_/_/|_/_____/\___/\__/\___/\___/\__/\____/_/     
- * 
+ *   / __  / /_/ />  <_>  </ /_/ /  __/ /_/  __/ /__/ /_/ /_/ / /
+ *  /_/ /_/\__,_/_/|_/_/|_/_____/\___/\__/\___/\___/\__/\____/_/
+ *
  *  A simple deauth + dissassociation attack detector written for the WiFi Nugget
  *  github.com/crazyquark/HaxxDetector
- * 
+ *
  *  By Alex Lynd | alexlynd.com
- * 
+ *
  *  Hacked modestly by @crazyquark
- *  to run on any ESP8266 device with an OLED screen. 
+ *  to run on any ESP8266 device with an OLED screen.
  */
 
 #include <Arduino.h>
@@ -25,7 +25,7 @@
 // Initialize the OLED display using SPI
 // GPIO5 -> SDA
 // GPIO4 -> SCL
-SSD1306       display(0x3c, 5, 4);
+SSD1306 display(0x3c, 5, 4);
 OLEDDisplayUi ui(&display);
 
 const short channels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}; // Max: US 11, EU 13, JAP 14
@@ -36,21 +36,14 @@ int attack_counter{0};
 unsigned long update_time{0};
 unsigned long ch_time{0};
 
-void sniffer(void* buf, wifi_promiscuous_pkt_type_t type)
+void sniffer(void *buf, wifi_promiscuous_pkt_type_t type)
 {
-  wifi_promiscuous_pkt_t* pkt = (wifi_promiscuous_pkt_t*)buf;
+  wifi_promiscuous_pkt_t *pkt = (wifi_promiscuous_pkt_t *)buf;
   wifi_pkt_rx_ctrl_t ctrl = (wifi_pkt_rx_ctrl_t)pkt->rx_ctrl;
-  uint32_t len = ctrl.sig_len;
 
-  if (!pkt || len < 28)
-    return;
-
-  if (type == 0xA0 || type == 0xC0)
-  { // flag deauth & dissassociation frames
+  if (type == WIFI_PKT_MGMT && (pkt->payload[0] == 0xA0 || pkt->payload[0] == 0xC0))
     ++packet_rate;
-  }
 }
-
 
 void displayDeadNugg()
 {
