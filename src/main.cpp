@@ -15,7 +15,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include <SSD1306Spi.h>
+#include <SSD1306.h>
 #include <OLEDDisplayUi.h>
 
 #include "esp_wifi.h"
@@ -23,12 +23,9 @@
 
 #include "nuggs.h" // Nugget Face bitmap files
 // Initialize the OLED display using SPI
-// D5 -> CLK
-// D7 -> MOSI (DOUT)
-// D0 -> RES
-// D2 -> DC
-// D8 -> CS
-SSD1306Spi        display(0, 2, 8);
+// GPIO5 -> SDA
+// GPIO4 -> SCL
+SSD1306       display(0x3c, 5, 4);
 OLEDDisplayUi ui(&display);
 
 const short channels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}; // Max: US 11, EU 13, JAP 14

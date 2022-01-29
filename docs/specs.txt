@@ -1,0 +1,13 @@
+https://www.aliexpress.com/item/32905330340.html?spm=a2g0o.9042311.0.0.27304c4d99GZlm
+
+When you do some ESP32 projects you must hate to add a power bank to provide the power. This tiny board could solve such problems. A LG 3000mAH 18650 battery could make ESP32 run 17 hours or more.
+18650 charging system integrated.
+indicate LED inside(Green means full& Red means charging)
+Charging and working could be at the same time.
+1 Switch could control the power.
+1 extra LED could be programmed(Connected with GPIO16[D0])
+0.5A charging current
+1A output
+Over charge protection
+Over discharge protection
+Full ESP32 pins break out 
